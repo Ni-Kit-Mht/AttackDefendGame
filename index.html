@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Attack Defend Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #navbar {
+      background: #222;
+      padding: 10px 20px;
+      text-align: center;
+      font-size: 1.2rem;
+      border-bottom: 2px solid #333;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #navbar button {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+
+    #navbar button:hover {
+      background: #666;
+    }
+
+    #gameWrapper {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #111;
+      position: relative;
+    }
+
+    #gameArea {
+      position: relative;
+      background: #000;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+    }
+
+    /* Game objects */
+    #attacker, #defender, .projectile, .projectile_2 {
+      position: absolute;
+      border-radius: 10%;
+    }
+
+    #attacker { background: red; }
+    #defender { background: blue; }
+    .projectile { background: green; }
+    .projectile_2 { background: yellow; }
+
+    /* === Rules Overlay === */
+    #rulesOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none; /* hidden initially */
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.7); /* translucent dark bg */
+      z-index: 10;
+    }
+
+    #rulesBox {
+      background: rgba(30, 30, 30, 0.9);
+      border: 2px solid #555;
+      border-radius: 15px;
+      color: white;
+      padding: 20px;
+      width: 80%;
+      height: 80%;
+      max-width: 600px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    #rulesBox h2 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    #closeRules {
+      align-self: flex-end;
+      background: #ff4444;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+
+    #closeRules:hover {
+      background: #ff6666;
+    }
+
+    /* Scrollbar styling (optional aesthetic) */
+    #rulesBox::-webkit-scrollbar {
+      width: 8px;
+    }
+    #rulesBox::-webkit-scrollbar-thumb {
+      background: #666;
+      border-radius: 4px;
+    }
+    
+  .key-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    gap: 15px;
+    justify-content: center;
+    margin: 30px auto;
+  }
+
+  .key {
+  background: #222;
+  border-radius: 10px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;   /* centers horizontally */
+  align-items: center;       /* centers vertically */
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 -4px 8px rgba(255,255,255,0.1);
+  transition: transform 0.1s, box-shadow 0.3s;
+}
+
+  .key:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  }
+
+  .key.j {
+    background: #ff4444;
+    color: #fff;
+    grid-column: span 3;
+    max-width: 100%;
+  }
+
+  #rules-text {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-top: 10px;
+    text-align: justify;
+  }
+    
+    
+  </style>
+</head>
+<body>
+  <nav id="navbar">
+    <button id="showRulesBtn">Show Rules</button>
+  </nav>
+  
+ <div id="gameWrapper">
+    <div id="gameArea">
+      <div id="attacker"></div>
+      <div>Red Attacker HP</div>
+      <div id = "attacker_hp">100</div>
+      <div>Blue Defender HP</div>
+      <div id = "defender_hp">100</div>
+      <div id="defender"></div>
+      <!-- === RULES OVERLAY === -->
+      <div id="rulesOverlay">
+        <div id="rulesBox">
+          <button id="closeRules">✕</button>
+          <h2>Game Rules</h2>
+
+    <div class="key-grid">
+      <div></div>
+      <div class="key">W</div>
+      <div></div>
+      <div class="key">A</div>
+      <div class="key">S</div>
+      <div class="key">D</div>
+      <div class="key j">J</div>
+    </div>
+
+    <p id="rules-text">
+      Use <b>W</b>, <b>A</b>, <b>S</b>, <b>D</b> keys to move your character up, left, down, and right respectively.
+      Press <b>J</b> to fire projectiles toward your enemy. Combine quick movements with precise attacks to survive!
+    </p>
+    
+    
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const attacker = document.getElementById("attacker");
+    const defender = document.getElementById("defender");
+    const showRulesBtn = document.getElementById("showRulesBtn");
+    const closeRulesBtn = document.getElementById("closeRules");
+    const rulesOverlay = document.getElementById("rulesOverlay");
+const attacker_hp_el = document.getElementById("attacker_hp");
+const defender_hp_el = document.getElementById("defender_hp");
+
+    showRulesBtn.addEventListener("click", () => {
+      rulesOverlay.style.display = "flex";
+    });
+
+    closeRulesBtn.addEventListener("click", () => {
+      rulesOverlay.style.display = "none";
+    });
+
+    // Optional: Close overlay when clicking outside rules box
+    rulesOverlay.addEventListener("click", (e) => {
+      if (e.target === rulesOverlay) {
+        rulesOverlay.style.display = "none";
+      }
+    });
+    
+    let baseSize = 600; // reference square size
+    let scale = 1;
+    let attacker_x = 100;
+    let attacker_y = 100;
+    let defender_x = 100;
+    let defender_y = 400;
+    
+    let attacker_hp = 100;
+    let defender_hp = 100;
+    let attacker_damage = 10;
+    let defender_damage = 10;
+
+    const baseSpeed = 10;
+    const baseProjectileSpeed = 400; // px/s at base size
+    const projectile_time = 1.0;
+    const fireCooldown = 500;
+    const fireCooldown_1 = 500;
+
+    let canFire = true;
+    let canFire_1 = true;
+
+    // === Resize Handler ===
+    function resizeGameArea() {
+      const wrapper = document.getElementById("gameWrapper");
+      const minDimension = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+      gameArea.style.width = `${minDimension}px`;
+      gameArea.style.height = `${minDimension}px`;
+      scale = minDimension / baseSize;
+
+      updateEntitySizes();
+      updateEntityPositions();
+    }
+
+    function updateEntitySizes() {
+      const size = 40 * scale;
+      [attacker, defender].forEach(el => {
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+      });
+    }
+
+    function updateEntityPositions() {
+      attacker.style.left = attacker_x * scale + "px";
+      attacker.style.top = attacker_y * scale + "px";
+      defender.style.left = defender_x * scale + "px";
+      defender.style.top = defender_y * scale + "px";
+    }
+
+    window.addEventListener("resize", resizeGameArea);
+    resizeGameArea();
+
+    // === Movement and Controls ===
+    window.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      const areaSize = gameArea.clientWidth;
+      const objSize = 40 * scale;
+      const speed = baseSpeed * scale;
+
+      if (key === "w" && attacker_y * scale - speed >= 0) attacker_y -= baseSpeed;
+      if (key === "s" && (attacker_y * scale + objSize + speed) <= areaSize) attacker_y += baseSpeed;
+      if (key === "a" && attacker_x * scale - speed >= 0) attacker_x -= baseSpeed;
+      if (key === "d" && (attacker_x * scale + objSize + speed) <= areaSize) attacker_x += baseSpeed;
+
+      updateEntityPositions();
+
+      if (key === "j" && canFire_1){
+          fireAttackerProjectile();
+          canFire_1 = false;
+        setTimeout(() => canFire_1 = true, fireCooldown_1);
+      }
+      if ((key === "j" || key === "w" || key === "s" || key === "a" || key === "d") && canFire) {
+        fireDefenderProjectile();
+        canFire = false;
+        setTimeout(() => canFire = true, fireCooldown);
+      }
+    });
+
+    // === Attacker Projectile ===
+    function fireAttackerProjectile() {
+        if (defender_hp <= 0) alert("Defender defeated!");
+if (attacker_hp <= 0) alert("Attacker defeated!");
+
+  const projectile = document.createElement("div");
+  projectile.className = "projectile";
+  const size = 40 * scale;
+  projectile.style.width = `${size}px`;
+  projectile.style.height = `${size}px`;
+  projectile.style.top = attacker_y * scale + "px";
+  projectile.style.left = attacker_x * scale + "px";
+  projectile.style.transition = `top ${projectile_time}s linear, left ${projectile_time}s linear`;
+  gameArea.appendChild(projectile);
+
+  setTimeout(() => {
+    projectile.style.top = defender_y * scale + "px";
+    projectile.style.left = defender_x * scale + "px";
+  }, 100);
+
+  // Collision checking
+  const startX = attacker_x * scale;
+  const startY = attacker_y * scale;
+  const targetX = defender_x * scale;
+  const targetY = defender_y * scale;
+  const totalTime = projectile_time * 1000;
+  const startTime = performance.now();
+
+  function checkCollision(now) {
+    const t = (now - startTime) / totalTime;
+    if (t >= 1) {
+      projectile.remove();
+      return;
+    }
+
+    const px = startX + (targetX - startX) * t;
+    const py = startY + (targetY - startY) * t;
+
+    const dx = px - defender_x * scale;
+    const dy = py - defender_y * scale;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 20 * scale) {
+      projectile.remove();
+      defender_hp -= attacker_damage;
+      defender_hp = Math.max(defender_hp, 0); // prevent negative HP
+      defender_hp_el.textContent = defender_hp;
+      return;
+    }
+
+    requestAnimationFrame(checkCollision);
+  }
+
+  requestAnimationFrame(checkCollision);
+      //setTimeout(() => projectile.remove(), projectile_time * 1000 + 200);
+    }
+
+    // === Defender Projectile ===
+    function fireDefenderProjectile() {
+        if (defender_hp <= 0) alert("Defender defeated!");
+if (attacker_hp <= 0) alert("Attacker defeated!");
+
+  const projectile_2 = document.createElement("div");
+  projectile_2.className = "projectile_2";
+  const size = 40 * scale;
+  projectile_2.style.width = `${size}px`;
+  projectile_2.style.height = `${size}px`;
+  projectile_2.style.left = defender_x * scale + "px";
+  projectile_2.style.top = defender_y * scale + "px";
+  gameArea.appendChild(projectile_2);
+
+  const startX = defender_x * scale;
+  const startY = defender_y * scale;
+  const targetX = attacker_x * scale;
+  const targetY = attacker_y * scale;
+  const dx = targetX - startX;
+  const dy = targetY - startY;
+  const distance = Math.hypot(dx, dy);
+  if (distance === 0) return projectile_2.remove();
+
+  const dirX = dx / distance;
+  const dirY = dy / distance;
+  let x = startX;
+  let y = startY;
+  let lastTime = performance.now();
+
+  const projectileSpeed = baseProjectileSpeed * scale;
+
+  function step(now) {
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+    x += dirX * projectileSpeed * dt;
+    y += dirY * projectileSpeed * dt;
+    projectile_2.style.left = `${x}px`;
+    projectile_2.style.top = `${y}px`;
+
+    // === Collision check ===
+    const dx2 = x - attacker_x * scale;
+    const dy2 = y - attacker_y * scale;
+    const dist2 = Math.hypot(dx2, dy2);
+    if (dist2 < 20 * scale) {
+      projectile_2.remove();
+      attacker_hp -= defender_damage;
+      attacker_hp = Math.max(attacker_hp, 0);
+      attacker_hp_el.textContent = attacker_hp;
+      return;
+    }
+
+    const toTargetX = targetX - x;
+    const toTargetY = targetY - y;
+    if (dx * toTargetX + dy * toTargetY <= 0) {
+      projectile_2.remove();
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+
+  requestAnimationFrame(step);
+}
+
+  </script>
+</body>
+</html>
